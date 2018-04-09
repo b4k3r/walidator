@@ -1,0 +1,9 @@
+ var query_orderby1 = from c in svcContext.ContactSet
+                      where c.CreditLimit.Equals(null)
+                      orderby c.CreditLimit descending
+                      select new
+                      {
+                       limit = c.CreditLimit,
+                       first = c.FirstName,
+                       last = c.LastName
+                      };

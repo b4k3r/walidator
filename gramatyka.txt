@@ -1,0 +1,78 @@
+# Gramatyka LINQ
+Marcin Prokop 261073
+
+## Terminalne symbole:
+- ID: [a-Za-Z0-9.]+
+- EQ: '='
+- OPERATOR: != | > | < | >= | % | <= | EQ
+- SEMICOLLON: ';'
+- COMMA: ','
+- DOT '.'
+- VAR: 'var'
+
+## Nieterminale symbole
+
+- start
+- program
+- var
+- negation
+- arg
+- method
+- where_args
+- where_clause
+- from_clause
+- order_type
+- orderby_clause
+- select_clause
+- select_method
+- select_new_arg
+- select_new_args
+
+## Produkcje
+
+start -> program SEMICOLLON
+
+dec -> VAR ID
+
+negation -> '!'
+         -> eps
+
+arg -> ID
+    -> arg DOT arg
+
+method -> ID(arg)
+
+where_args -> arg OPERATOR arg
+           -> negation arg DOT method
+           -> negation method
+
+where_clause -> 'where' where_args
+             -> eps
+
+from_clause -> ID 'in' arg
+
+order_type -> 'descending'
+           -> 'ascending'
+           -> eps
+
+orderby_clause -> 'orderby' arg order_type
+
+
+select_method -> DOT'min()'
+              -> DOT'max()'
+              -> DOT'FirstOrDefault()'
+              -> eps
+
+select_new_arg -> arg select_new_args
+
+select_new_args -> COMMA arg select_new_args
+                -> EQ arg select_new_args
+                -> eps
+
+select_args -> arg
+            -> arg DOT method
+            -> 'new' { select_new_arg }
+
+select_clause -> 'select' select_args method
+
+program -> dec EQ from_clause where_clause orderby_clause select_clause
