@@ -23,10 +23,11 @@ type Tokenizer struct {
 	currentColumn int
 }
 
-var keywords = [...]string{"where", "in", "from", "descending", "ascending", "orderby", "select", "new"}
-var isID = regexp.MustCompile("^[a-zA-Z0-9_]+").MatchString
-var isOperator = regexp.MustCompile("!=|>|<|>=|%|<=|=").MatchString
-var isSeparator = regexp.MustCompile("[{|}|(|)]").MatchString
+var keywords = [...]string{
+	"SubClassOf", "EquivalentClasses", "DisjointClasses", "SameIndividual", "DifferentIndividuals",
+	"ObjectIntersectionOf", "ObjectUnionOf", "ObjectComplementOf", "ObjectOneOf"}
+var isAlpha = regexp.MustCompile("^[a-zA-Z]+").MatchString
+var isSeparator = regexp.MustCompile("[(|)]").MatchString
 
 func (t *Tokenizer) Scan() {
 	var s scanner.Scanner
@@ -39,13 +40,13 @@ func (t *Tokenizer) Scan() {
 	for tok := s.Next(); tok != scanner.EOF; tok = s.Next() {
 		t.currentColumn++
 
-		if isID(string(tok)) {
-			literal_in_runes := []rune{tok}
+		if isAlpha(string(tok)) {
+			literalInRunes := []rune{tok}
 
 			for {
 				tok = s.Peek()
-				if isID(string(tok)) {
-					literal_in_runes = append(literal_in_runes, tok)
+				if isAlpha(string(tok)) {
+					literalInRunes = append(literalInRunes, tok)
 					s.Next()
 					t.currentColumn++
 				} else {
@@ -53,14 +54,12 @@ func (t *Tokenizer) Scan() {
 				}
 			}
 
-			literal := string(literal_in_runes)
+			literal := string(literalInRunes)
 
 			if isKeyword(literal) {
-				t.addToken(literal, literal)
-			} else if string(literal) == "var" {
-				t.addToken("DEC", literal)
+				t.addToken("KEYWORD", literal)
 			} else {
-				t.addToken("ID", literal)
+				t.addToken("ALPHA", literal)
 			}
 		} else if tok == ' ' {
 			continue
@@ -68,25 +67,16 @@ func (t *Tokenizer) Scan() {
 			t.currentColumn = 0
 			t.currentLine++
 			continue
-		} else if tok == '=' {
-			t.addToken("EQ", "=")
-		} else if isOperator(string(tok)) {
-			t.addToken("OPERATOR", string(tok))
-		} else if tok == ';' {
-			t.addToken("SEMICOLLON", "=")
-		} else if tok == ',' {
-			t.addToken("COMMA", ",")
-		} else if tok == '.' {
-			t.addToken("DOT", ".")
-		} else if tok == '!' {
-			t.addToken("NEGATION", "!")
+		} else if tok == ':' {
+			t.addToken(":", ":")
 		} else if isSeparator(string(tok)) {
 			t.addToken(string(tok), string(tok))
 		} else {
-			fmt.Fprintf(os.Stderr, "%s:%d:%d Unexpected charater '%s' \n", t.fileName, t.currentLine, t.currentColumn, string(tok))
+			fmt.Fprintf(os.Stderr, "%s:%d:%d unexpected charater '%s' \n", t.fileName, t.currentLine, t.currentColumn, string(tok))
 			os.Exit(1)
 		}
 	}
+	t.addToken("EOF", "EOF")
 }
 
 func isKeyword(str string) bool {

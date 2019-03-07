@@ -1,0 +1,28 @@
+EquivalentClasses(
+   :ChildlessPerson 
+   ObjectIntersectionOf(
+     :Person 
+     ObjectComplementOf( :Parent )
+   ) 
+) 
+ 
+EquivalentClasses(
+   :MyBirthdayGuests
+   ObjectOneOf( :Bill :John :Mary) 
+) 
+
+DisjointClasses(
+   :MyBirthdayGuests
+   ObjectOneOf( :Bill :John :Mary) 
+   ObjectUnionOf(
+          ObjectOneOf( :Brian )
+          ObjectComplementOf( :Dog )
+        )
+) 
+
+SubClassOf( :PersonWithChild
+    ObjectIntersectionOf( :hasChild ObjectUnionOf( :Boy :Girl ) )
+)
+
+SameIndividual( :Peter :PeterGriffin :PeterGriffin :PeterGriffin )
+DifferentIndividuals( :Peter :PeterGriffin :PeterGriffin :PeterGriffin)

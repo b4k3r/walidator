@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,10 +13,7 @@ func main() {
 	tokenizer := Tokenizer{content: content, fileName: fileName}
 	tokenizer.Scan()
 
-	fmt.Print("TOKENS: ")
-	fmt.Println(tokenizer.tokens)
-
-	parser := NewParser(tokenizer.tokens)
+	parser := NewParser(tokenizer)
 	parser.start()
 }
 

@@ -9,185 +9,189 @@ type Parser struct {
 	tokens     []Token
 	token      Token
 	tokenIndex int
+	tokenizer  Tokenizer
 }
 
-func NewParser(tokens []Token) *Parser {
+func NewParser(t Tokenizer) *Parser {
 	p := new(Parser)
-	p.tokens = tokens
+	p.tokens = t.tokens
 	p.tokenIndex = 0
 	p.token = p.tokens[0]
+	p.tokenizer = t
 
 	return p
 }
 
+var axiomKeywords = [...]string{
+	"SubClassOf", "EquivalentClasses", "DisjointClasses", "SameIndividual", "DifferentIndividuals"}
+var classExpressionsKeywords = [...]string{
+	"ObjectIntersectionOf", "ObjectUnionOf", "ObjectComplementOf", "ObjectOneOf"}
+
 func (p *Parser) start() {
 	p.program()
-	p.takeToken("SEMICOLLON")
-	fmt.Println("start OK!")
+
+	fmt.Println("Syntax OK!")
 }
 
 func (p *Parser) program() {
-	p.dec()
-	p.takeToken("EQ")
-	p.fromClause()
-	p.whereClause()
-	p.orderbyClause()
-	p.selectClause()
-	fmt.Println("program OK!")
+	p.axiom()
+
+	if p.isAxiomKeyword() {
+		p.program()
+	}
 }
 
-func (p *Parser) dec() {
-	p.takeToken("DEC")
-	p.takeToken("ID")
-
-	fmt.Println("dec OK!")
-}
-
-func (p *Parser) fromClause() {
-	if p.token.kind == "from" {
-		p.takeToken("from")
-		p.takeToken("ID")
-		p.takeToken("in")
-		p.arg()
-
-		fmt.Println("from_clause OK!")
+func (p *Parser) axiom() {
+	if p.token.value == "SubClassOf" {
+		p.subClassOf()
+	} else if p.token.value == "EquivalentClasses" {
+		p.equivalentClasses()
+	} else if p.token.value == "DisjointClasses" {
+		p.disjointClasses()
+	} else if p.token.value == "SameIndividual" {
+		p.sameIndividual()
+	} else if p.token.value == "DifferentIndividuals" {
+		p.differentIndividuals()
 	} else {
-		fmt.Fprintln(os.Stderr, "Epsilon is not allowed")
+		p.syntaxError("<axiom>")
 	}
 }
 
-func (p *Parser) arg() {
-	p.takeToken("ID")
-
-	if p.token.kind == "DOT" {
-		p.takeToken("DOT")
-
-		if p.peekToken().kind == "(" {
-			p.method()
-		} else {
-			p.arg()
-		}
-	}
-}
-
-func (p *Parser) whereClause() {
-	if p.token.kind == "where" {
-		p.takeToken("where")
-
-		if p.peekToken().kind == "OPERATOR" {
-			p.arg()
-			p.takeToken("OPERATOR")
-			p.arg()
-		} else if p.token.kind == "NEGATION" {
-			p.negation()
-			p.arg()
-		} else {
-			p.negation()
-			p.arg()
-		}
-
-		fmt.Println("where_clause OK!")
-	} else {
-		fmt.Println("where_clause skipped!")
-	}
-}
-
-func (p *Parser) negation() {
-	if p.token.kind == "NEGATION" {
-		p.takeToken("NEGATION")
-	}
-}
-
-func (p *Parser) method() {
-	p.takeToken("ID")
+func (p *Parser) subClassOf() {
+	p.takeToken("KEYWORD")
 	p.takeToken("(")
-	p.arg()
+	p.classExpression()
+	p.classExpression()
 	p.takeToken(")")
 }
 
-func (p *Parser) orderbyClause() {
-	if p.token.kind == "orderby" {
-		p.takeToken("orderby")
+func (p *Parser) equivalentClasses() {
+	p.takeToken("KEYWORD")
+	p.takeToken("(")
+	p.classExpression()
+	p.classExpression()
+	p.classExpressions()
+	p.takeToken(")")
+}
 
-		p.arg()
-		p.orderType()
+func (p *Parser) disjointClasses() {
+	p.takeToken("KEYWORD")
+	p.takeToken("(")
+	p.classExpression()
+	p.classExpression()
+	p.classExpressions()
+	p.takeToken(")")
+}
 
-		fmt.Println("orderby_clause OK!")
+func (p *Parser) sameIndividual() {
+	p.takeToken("KEYWORD")
+	p.takeToken("(")
+	p.id()
+	p.id()
+	p.ids()
+	p.takeToken(")")
+}
+
+func (p *Parser) differentIndividuals() {
+	p.takeToken("KEYWORD")
+	p.takeToken("(")
+	p.id()
+	p.id()
+	p.ids()
+	p.takeToken(")")
+}
+
+func (p *Parser) id() {
+	p.takeToken(":")
+	p.takeToken("ALPHA")
+}
+
+func (p *Parser) ids() {
+	if p.token.value == ":" {
+		p.id()
+		p.ids()
+	}
+}
+
+func (p *Parser) classExpression() {
+	if p.token.value == ":" {
+		p.id()
+	} else if p.token.value == "ObjectIntersectionOf" {
+		p.objectIntersectionOf()
+	} else if p.token.value == "ObjectUnionOf" {
+		p.objectUnionOf()
+	} else if p.token.value == "ObjectComplementOf" {
+		p.objectComplementOf()
+	} else if p.token.value == "ObjectOneOf" {
+		p.objectOneOf()
 	} else {
-		fmt.Println("orderby_clause skipped!")
+		p.syntaxError("<classExpression>")
 	}
 }
 
-func (p *Parser) orderType() {
-	if p.token.kind == "descending" {
-		p.takeToken("descending")
-	} else if p.token.kind == "ascending" {
-		p.takeToken("ascending")
-	} else {
-		fmt.Println("orderby_type skipped!")
+func (p *Parser) classExpressions() {
+	if p.token.value == ":" || p.isClassExpressionsKeyword() {
+		p.classExpression()
+		p.classExpressions()
 	}
 }
 
-func (p *Parser) selectClause() {
-	p.takeToken("select")
-	p.selectArgs()
-	p.selectMethod()
-
-	fmt.Println("select_clause OK!")
+func (p *Parser) objectIntersectionOf() {
+	p.takeToken("KEYWORD")
+	p.takeToken("(")
+	p.classExpression()
+	p.classExpression()
+	p.classExpressions()
+	p.takeToken(")")
 }
 
-func (p *Parser) selectMethod() {
-	if p.token.kind == "DOT" {
-		p.takeToken("DOT")
-		p.takeToken("ID")
-		p.takeToken("(")
-		p.takeToken(")")
-	} else {
-		fmt.Println("select_method skipped!")
-	}
-
+func (p *Parser) objectUnionOf() {
+	p.takeToken("KEYWORD")
+	p.takeToken("(")
+	p.classExpression()
+	p.classExpression()
+	p.classExpressions()
+	p.takeToken(")")
 }
 
-func (p *Parser) selectArgs() {
-	if p.token.kind == "new" {
-		p.takeToken("new")
-		p.takeToken("{")
-		p.selectNewArg()
-		p.takeToken("}")
-	} else {
-		p.arg()
-	}
+func (p *Parser) objectComplementOf() {
+	p.takeToken("KEYWORD")
+	p.takeToken("(")
+	p.classExpression()
+	p.takeToken(")")
 }
 
-func (p *Parser) selectNewArg() {
-	p.arg()
-	p.selectNewArgs()
-}
-
-func (p *Parser) selectNewArgs() {
-	if p.token.kind == "COMMA" {
-		p.takeToken("COMMA")
-		p.arg()
-		p.selectNewArgs()
-	} else if p.token.kind == "EQ" {
-		p.takeToken("EQ")
-		p.arg()
-		p.selectNewArgs()
-	}
+func (p *Parser) objectOneOf() {
+	p.takeToken("KEYWORD")
+	p.takeToken("(")
+	p.id()
+	p.ids()
+	p.takeToken(")")
 }
 
 func (p *Parser) takeToken(tokenType string) {
 	if p.token.kind != tokenType {
-		fmt.Fprintf(os.Stderr, "Unexpected token '%s', line: %d, column: %d \n", p.token.kind, p.token.line, p.token.column)
-		os.Exit(1)
+		p.syntaxError(tokenType)
 	}
 
-	p.token = p.nextToken()
+	if p.tokenIndex == len(p.tokens) {
+		p.syntaxError(tokenType)
+	} else {
+		p.token = p.nextToken()
+	}
+}
+
+func (p *Parser) syntaxError(expectedToken string) {
+	fmt.Fprintf(os.Stderr, "%s:%d:%d: syntax error, unexpected symbol '%s', expected: '%s' symbol \n",
+		p.tokenizer.fileName, p.token.line, p.token.column, p.token.value, expectedToken)
+	os.Exit(1)
 }
 
 func (p *Parser) nextToken() Token {
 	if p.tokenIndex < len(p.tokens)-1 {
 		p.tokenIndex++
+	} else {
+		p.syntaxError("EOF")
 	}
 
 	return p.tokens[p.tokenIndex]
@@ -195,4 +199,22 @@ func (p *Parser) nextToken() Token {
 
 func (p *Parser) peekToken() Token {
 	return p.tokens[p.tokenIndex+1]
+}
+
+func (p *Parser) isAxiomKeyword() bool {
+	for _, ak := range axiomKeywords {
+		if ak == p.token.value {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *Parser) isClassExpressionsKeyword() bool {
+	for _, ak := range classExpressionsKeywords {
+		if ak == p.token.value {
+			return true
+		}
+	}
+	return false
 }
