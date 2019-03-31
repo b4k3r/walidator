@@ -1,7 +1,7 @@
 # Walidator
 
-Uproszczony walidator składni dla podzbioru języka OWL 2.0 zapisanego z pomocą wersji funkcjonalnej jego składni. 
-Celem jest walidacja tekstu zawierającego szereg aksjomatów określających wzajmne relacje pomiędzy klasami lub jednostkami. 
+Uproszczony walidator składni dla podzbioru języka OWL 2.0 zapisanego z pomocą wersji funkcjonalnej jego składni.
+Celem jest walidacja tekstu zawierającego szereg aksjomatów określających wzajmne relacje pomiędzy klasami lub jednostkami.
 Zakres sprawdzanej składni zawiera następujące konstrukcje: `SubClassOf`, `EquivalentClasses`, `DisjointClasses`, `SameIndividual`,
 `DifferentIndividuals`, `ObjectIntersectionOf`, `ObjectUnionOf`, `ObjectComplementOf` i `ObjectOneOf`. Nie uwzględniono możliwości
 dodawania adnotacji.
@@ -12,7 +12,7 @@ dodawania adnotacji.
 ALPHA ::= [a-zA-Z]+
 
 start ::= <program>
-<program> ::= <axiom> <program> | eps
+<program> ::= <axiom> <program>
 
 <id> ::= ':'ALPHA
 <ids> ::= <id> <ids> | eps
@@ -20,7 +20,7 @@ start ::= <program>
 <classExpression> ::= <id> | <objectIntersectionOf> | <objectUnionOf> | <objectComplementOf> | <objectOneOf>
 <classExpressions> ::= <classExpression> <classExpressions> | eps
 
-<axiom> ::= <subClassOf> | <equivalentClasses> | <disjointClasses> | <sameIndividual> | <differentIndividuals>
+<axiom> ::= <subClassOf> | <equivalentClasses> | <disjointClasses> | <sameIndividual> | <differentIndividuals> | eps
 
 <subClassOf> ::= 'SubClassOf' '(' <classExpression> <classExpression> ')'
 <equivalentClasses> ::= 'EquivalentClasses' '(' <classExpression> <classExpression> <classExpressions> ')'

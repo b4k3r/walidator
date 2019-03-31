@@ -38,6 +38,8 @@ func (p *Parser) program() {
 
 	if p.isAxiomKeyword() {
 		p.program()
+	} else if p.token.value != "EOF" {
+		p.syntaxError("<axiom>")
 	}
 }
 
@@ -52,8 +54,6 @@ func (p *Parser) axiom() {
 		p.sameIndividual()
 	} else if p.token.value == "DifferentIndividuals" {
 		p.differentIndividuals()
-	} else {
-		p.syntaxError("<axiom>")
 	}
 }
 
@@ -174,27 +174,14 @@ func (p *Parser) takeToken(tokenType string) {
 		p.syntaxError(tokenType)
 	}
 
-	if p.tokenIndex == len(p.tokens) {
-		p.syntaxError(tokenType)
-	} else {
-		p.token = p.nextToken()
-	}
+	p.tokenIndex++
+	p.token = p.tokens[p.tokenIndex]
 }
 
 func (p *Parser) syntaxError(expectedToken string) {
 	fmt.Fprintf(os.Stderr, "%s:%d:%d: syntax error, unexpected symbol '%s', expected: '%s' symbol \n",
 		p.tokenizer.fileName, p.token.line, p.token.column, p.token.value, expectedToken)
 	os.Exit(1)
-}
-
-func (p *Parser) nextToken() Token {
-	if p.tokenIndex < len(p.tokens)-1 {
-		p.tokenIndex++
-	} else {
-		p.syntaxError("EOF")
-	}
-
-	return p.tokens[p.tokenIndex]
 }
 
 func (p *Parser) peekToken() Token {
